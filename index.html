@@ -215,6 +215,14 @@ canvas#printCanvas{display:none}
       </div>
     </div>
 
+
+    <!-- MESA -->
+    <div style="background:#1A5276;border-radius:14px;padding:16px 18px;margin-bottom:14px;border:2px solid #D4AC0D;text-align:center">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:#AED6F1;margin-bottom:8px">📍 Mesa de Votación</div>
+      <div id="mesaNum" style="font-size:32px;font-weight:900;color:#D4AC0D;line-height:1.1;margin-bottom:4px"></div>
+      <div id="mesaLugar" style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.9)"></div>
+    </div>
+
     <!-- PREVIEW DE LA IMAGEN A COMPARTIR -->
     <div class="print-section">
       <div class="print-label">Vista previa del print a enviar</div>
@@ -337,6 +345,50 @@ function card(e, q) {
 }
 
 // ── DETALLE ──
+
+// ── MESAS FIUBA 2026 ──────────────────────────────────────────
+const MESAS_FIUBA = [
+  {n:1,  desde:"ABAL MEDINA",      hasta:"LIMARDO",            lugar:"Hall de Decanato"},
+  {n:2,  desde:"LINARES",          hasta:"ZYLBERSTAJN FUSCO",  lugar:"Hall de Decanato"},
+  {n:3,  desde:"AAB",              hasta:"ANTONINI",           lugar:"Hall de Decanato"},
+  {n:4,  desde:"ANTONIO",          hasta:"BASSI",              lugar:"Hall de Decanato"},
+  {n:5,  desde:"BASSO BARBIERI",   hasta:"BRUGGER",            lugar:"Hall de Decanato"},
+  {n:6,  desde:"BRUM GUTIERREZ",   hasta:"CARRASCO",           lugar:"Hall de Consejo Directivo"},
+  {n:7,  desde:"CARRASCO",         hasta:"CLAROS GARCIA",      lugar:"Hall de Consejo Directivo"},
+  {n:8,  desde:"CLAROS MENDOZA",   hasta:"DAUNIS",             lugar:"Hall de Consejo Directivo"},
+  {n:9,  desde:"DAVALOS MORENO",   hasta:"DUHALDE",            lugar:"Hall de Consejo Directivo"},
+  {n:10, desde:"DUHOUR",           hasta:"FERRI",              lugar:"Hall de Consejo Directivo"},
+  {n:11, desde:"FERRI",            hasta:"GARGARELLA",         lugar:"Gimnasio"},
+  {n:12, desde:"GARIBOTTI",        hasta:"GRANATELLI",         lugar:"Gimnasio"},
+  {n:13, desde:"GRAND",            hasta:"IRIGARAY",           lugar:"Gimnasio"},
+  {n:14, desde:"IRIGOYEN BARONE",  hasta:"LEON VERDI",         lugar:"Gimnasio"},
+  {n:15, desde:"LEON",             hasta:"MAMANI TACO",        lugar:"Gimnasio"},
+  {n:16, desde:"MAMANI TARQUI",    hasta:"MENENDEZ",           lugar:"Gimnasio"},
+  {n:17, desde:"MENENDEZ",         hasta:"NAVEIRA",            lugar:"Gimnasio"},
+  {n:18, desde:"NAVEIRA",          hasta:"PAREJA",             lugar:"Gimnasio"},
+  {n:19, desde:"PARENTE",          hasta:"PONCE DE LEON",      lugar:"Gimnasio"},
+  {n:20, desde:"PONCE ERRANTE",    hasta:"RICCI",              lugar:"Gimnasio"},
+  {n:21, desde:"RICCI",            hasta:"RUIZ QUISPE",        lugar:"Gimnasio"},
+  {n:22, desde:"RUIZ SUGLIANI",    hasta:"SET",                lugar:"Gimnasio"},
+  {n:23, desde:"SETA",             hasta:"TIPAN VELEZ",        lugar:"Gimnasio"},
+  {n:24, desde:"TIPANTA MARTINEZ", hasta:"VERALLI",            lugar:"Gimnasio"},
+  {n:25, desde:"VERCESI",          hasta:"ZYSMAN BAYETTO",     lugar:"Gimnasio"},
+];
+
+function normAp(s) {
+  return s.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+
+function calcMesa(nombreCompleto) {
+  // nombre viene como "APELLIDO NOMBRE" o "APELLIDO, NOMBRE"
+  const ap = normAp(nombreCompleto.split(',')[0].trim());
+  for (const m of MESAS_FIUBA) {
+    if (normAp(m.desde) <= ap && ap <= normAp(m.hasta)) return m;
+  }
+  // Si no hay match exacto, devolver la más cercana
+  return MESAS_FIUBA[MESAS_FIUBA.length - 1];
+}
+
 function det(orden) {
   const e = P.find(x => x.o === orden);
   if (!e) return;
@@ -351,6 +403,10 @@ function det(orden) {
   document.getElementById('ppDni').textContent = e.d;
   document.getElementById('ppLegajo').textContent = e.l;
   document.getElementById('ov').classList.add('on');
+  // Calcular y mostrar mesa
+  const mesaInfo = calcMesa(e.n);
+  document.getElementById('mesaNum').textContent  = 'Mesa ' + String(mesaInfo.n).padStart(2,'0');
+  document.getElementById('mesaLugar').textContent = mesaInfo.lugar;
 }
 
 function cerrarModal() { document.getElementById('ov').classList.remove('on'); }
@@ -362,7 +418,7 @@ async function generarImagen() {
   if (!e) return null;
 
   const canvas = document.getElementById('printCanvas');
-  const W = 800, H = 380;
+  const W = 800, H = 430;
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
 
@@ -434,12 +490,46 @@ async function generarImagen() {
     cx += w + 14;
   });
 
-  // Footer -- texto medido para evitar superposicion
-  ctx.fillStyle = 'rgba(255,255,255,0.1)';
-  ctx.beginPath(); roundRect(ctx, 36, 282, W-72, 44, 10); ctx.fill();
+  // Mesa strip
+  const mi = calcMesa(e.n);
+  const mesaStr = 'Mesa ' + String(mi.n).padStart(2,'0');
 
-  const fY = 310;
-  const t1 = 'Votá '; const t2 = 'Lista 7'; const t3 = ' — Paseo Colón · 8 a 20 hs';
+  ctx.fillStyle = '#D4AC0D';
+  ctx.beginPath(); roundRect(ctx, 36, 278, W-72, 78, 12); ctx.fill();
+
+  // Icono + label
+  ctx.fillStyle = '#1A5276';
+  ctx.font = 'bold 11px Segoe UI, system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('MESA DE VOTACIÓN', W/2, 298);
+
+  // Mesa number — left half
+  ctx.font = 'bold 34px Segoe UI, system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(mesaStr, W/2 - 120, 338);
+
+  // Divider
+  ctx.fillStyle = 'rgba(26,82,118,0.35)';
+  ctx.fillRect(W/2 - 10, 305, 2, 50);
+
+  // Lugar — right half
+  ctx.fillStyle = '#1A5276';
+  ctx.font = 'bold 14px Segoe UI, system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  // Split lugar into two lines if needed
+  const lugarWords = mi.lugar.split(' ');
+  const lugarL1 = lugarWords.slice(0, 2).join(' ');
+  const lugarL2 = lugarWords.slice(2).join(' ');
+  ctx.fillText(lugarL1, W/2 + 120, lugarL2 ? 326 : 334);
+  if (lugarL2) ctx.fillText(lugarL2, W/2 + 120, 344);
+  ctx.textAlign = 'left';
+
+  // Footer
+  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.beginPath(); roundRect(ctx, 36, 368, W-72, 42, 10); ctx.fill();
+
+  const fY = 396;
+  const t1 = 'Votá '; const t2 = 'Lista 7'; const t3 = ' — Paseo Colón · 9 a 20 hs';
   ctx.font = '15px Segoe UI, system-ui, sans-serif';
   const w1 = ctx.measureText(t1).width;
   ctx.font = 'bold 15px Segoe UI, system-ui, sans-serif';
@@ -510,6 +600,7 @@ async function compartirImagen() {
 function enviarWA() {
   const e = currentStudent;
   if (!e) return;
+  const mi2 = calcMesa(e.n);
   const msg = `Hola! Acá tenés tus datos del padrón 👇
 
 ` +
@@ -522,7 +613,10 @@ function enviarWA() {
     `*Legajo:* ${e.l}
 
 ` +
-    `✅ Podés votar el *miércoles 22* en Paseo Colón, de *8 a 20 hs*.
+    `🗳️ *Tu mesa:* Mesa ${String(mi2.n).padStart(2,'0')} — ${mi2.lugar}
+
+` +
+    `✅ Podés votar el *miércoles 22* en Paseo Colón, de *9 a 20 hs*.
 
 ` +
     `🔵 *Votá Lista 7 — Proyecto Ingeniería* 🔵`;
